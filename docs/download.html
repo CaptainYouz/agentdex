@@ -694,13 +694,11 @@
         </div>
 
         <div class="dl-notes">
-          <h3>Heads up — unsigned builds</h3>
+          <h3>Heads up — first launch</h3>
           <p>
-            Builds are not yet code-signed/notarized.
-            <strong>macOS:</strong> if you see “Agentdex is damaged”, clear the quarantine flag after moving it to Applications:
-            <code>xattr -dr com.apple.quarantine /Applications/Agentdex.app</code>.
-            <strong>Windows:</strong> on the SmartScreen prompt choose <em>More info → Run anyway</em>.
-            <strong>Linux:</strong> make the AppImage executable (<code>chmod +x</code>) or install the <code>.deb</code>.
+            <strong>macOS:</strong> signed with an Apple Developer ID and notarized by Apple — it opens normally, no extra steps.
+            <strong>Windows:</strong> builds are unsigned, so SmartScreen may warn — choose <em>More info → Run anyway</em>.
+            <strong>Linux:</strong> make the AppImage executable (<code>chmod +x</code>), or install the <code>.deb</code> / <code>.rpm</code>.
           </p>
           <p>
             All downloads come from
