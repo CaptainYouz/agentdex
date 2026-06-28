@@ -8,13 +8,58 @@
       name="description"
       content="Agentdex scans Cursor, Claude, and Codex on your machine and turns scattered skills, subagents, rules, and CLAUDE.md files into one searchable, offline catalog."
     />
-    <meta property="og:title" content="Agentdex" />
+    <link rel="canonical" href="https://captainyouz.github.io/agentdex/" />
+    <meta name="theme-color" content="#08080c" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="logo.svg" />
+    <link rel="apple-touch-icon" href="logo-1024.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Agentdex" />
+    <meta property="og:url" content="https://captainyouz.github.io/agentdex/" />
+    <meta property="og:title" content="Agentdex — every AI skill, agent, and rule in one place" />
     <meta
       property="og:description"
-      content="Every AI skill, agent, and rule — in one place. Offline. No account, no cloud."
+      content="One searchable, offline catalog of every Cursor, Claude, and Codex skill, agent, rule, and CLAUDE.md on your machine. No account, no cloud, no data collected."
     />
-    <meta property="og:image" content="screenshot.png" />
-    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://captainyouz.github.io/agentdex/screenshot.png" />
+    <meta property="og:image:width" content="1592" />
+    <meta property="og:image:height" content="1066" />
+    <meta
+      property="og:image:alt"
+      content="Agentdex — one searchable catalog of every skill, agent, rule, and context file"
+    />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Agentdex — every AI skill, agent, and rule in one place" />
+    <meta
+      name="twitter:description"
+      content="One searchable, offline catalog of every Cursor, Claude, and Codex skill, agent, rule, and CLAUDE.md on your machine. No account, no cloud, no data collected."
+    />
+    <meta name="twitter:image" content="https://captainyouz.github.io/agentdex/screenshot.png" />
+    <meta name="twitter:creator" content="@anas_build_" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Agentdex",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Windows, Linux",
+        "description": "A local desktop app that scans Cursor, Claude, and Codex on your machine and turns scattered skills, agents, rules, and CLAUDE.md files into one searchable, offline catalog.",
+        "url": "https://captainyouz.github.io/agentdex/",
+        "downloadUrl": "https://captainyouz.github.io/agentdex/download.html",
+        "softwareVersion": "0.1.0",
+        "license": "https://github.com/CaptainYouz/agentdex/blob/main/LICENSE",
+        "image": "https://captainyouz.github.io/agentdex/screenshot.png",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Anas", "url": "https://x.com/anas_build_" }
+      }
+    </script>
     <style>
       :root {
         --bg: #08080c;
@@ -25,6 +70,7 @@
         --cyan: #00f0ff;
         --magenta: #ff2bd0;
         --accent-grad: linear-gradient(100deg, #00f0ff 0%, #2a6cff 45%, #ff2bd0 100%);
+        --site-header-height: 64px;
       }
 
       * {
@@ -56,22 +102,29 @@
         padding: 0 24px;
       }
 
+      .container-xl {
+        width: 100%;
+        max-width: 1280px;
+        margin-inline: auto;
+        padding-inline: clamp(20px, 5vw, 48px);
+      }
+
       /* Hero */
       .hero {
         position: relative;
         text-align: center;
-        padding: 96px 0 64px;
+        padding: calc(var(--site-header-height) + 48px) 0 64px;
         overflow: hidden;
       }
 
       .hero::before {
         content: "";
         position: absolute;
-        top: -200px;
+        top: 0;
         left: 50%;
         transform: translateX(-50%);
-        width: 700px;
-        height: 500px;
+        width: min(100%, 900px);
+        height: 520px;
         background: radial-gradient(
           ellipse at center,
           rgba(122, 43, 255, 0.22),
@@ -83,21 +136,91 @@
         pointer-events: none;
       }
 
-      .hero > * {
+      .hero > .wrap {
         position: relative;
         z-index: 1;
       }
 
-      .eyebrow {
-        display: inline-block;
-        font-size: 13px;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
+      /* Site header */
+      .site-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 2;
+        background: none;
+        border-bottom: none;
+      }
+
+      .site-header__inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: var(--site-header-height);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+      }
+
+      .brand__logo {
+        display: block;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+      }
+
+      .brand__name {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--fg);
+      }
+
+      .site-nav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .site-nav a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
         color: var(--muted);
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        padding: 6px 14px;
-        margin-bottom: 28px;
+        font-weight: 600;
+        font-size: 15px;
+        padding: 8px 14px;
+        border-radius: 9px;
+        transition:
+          color 0.15s ease,
+          background 0.15s ease;
+      }
+
+      .site-nav a:hover {
+        color: var(--fg);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .site-nav__github svg {
+        display: block;
+        width: 18px;
+        height: 18px;
+      }
+
+      @media (max-width: 520px) {
+        .site-nav a {
+          padding: 8px 10px;
+          font-size: 14px;
+        }
+        .site-nav__github span {
+          display: none;
+        }
       }
 
       h1 {
@@ -132,36 +255,115 @@
       .btn {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
-        padding: 14px 26px;
+        min-height: 48px;
+        padding: 12px 28px;
         border-radius: 12px;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 16px;
+        line-height: 1;
         text-decoration: none;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
         border: 1px solid transparent;
+        cursor: pointer;
+        user-select: none;
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease,
+          color 0.15s ease,
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
       }
 
       .btn-primary {
-        background: var(--accent-grad);
+        border: none;
+        background: linear-gradient(180deg, #1af0ff 0%, #00c8d9 100%);
         color: #05050a;
-        box-shadow: 0 8px 30px rgba(122, 43, 255, 0.35);
+        box-shadow:
+          0 4px 0 #007a85,
+          0 8px 28px rgba(0, 240, 255, 0.28);
       }
 
       .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 40px rgba(122, 43, 255, 0.5);
+        background: linear-gradient(180deg, #00f0ff 0%, #00b8c7 100%);
+        transform: translateY(-1px);
+        box-shadow:
+          0 5px 0 #006870,
+          0 10px 32px rgba(0, 240, 255, 0.38);
+      }
+
+      .btn-primary:active {
+        transform: translateY(2px);
+        box-shadow:
+          0 1px 0 #007a85,
+          0 4px 14px rgba(0, 240, 255, 0.2);
       }
 
       .btn-ghost {
-        background: var(--bg-soft);
-        border-color: var(--line);
+        background: linear-gradient(180deg, #1a1a28 0%, #141420 100%);
+        border: 1.5px solid #32324a;
         color: var(--fg);
+        font-weight: 600;
+        box-shadow:
+          0 4px 0 #0a0a12,
+          0 8px 22px rgba(0, 0, 0, 0.35);
+      }
+
+      .btn-ghost::after {
+        content: "→";
+        margin-left: 0.15em;
+        font-weight: 700;
+        transition: transform 0.15s ease;
       }
 
       .btn-ghost:hover {
-        transform: translateY(-2px);
-        border-color: var(--cyan);
+        transform: translateY(-1px);
+        border-color: color-mix(in srgb, var(--cyan) 50%, #32324a);
+        background: linear-gradient(180deg, #222236 0%, #181828 100%);
+        color: #fff;
+        box-shadow:
+          0 5px 0 #0a0a12,
+          0 10px 28px rgba(0, 240, 255, 0.12);
+      }
+
+      .btn-ghost:hover::after {
+        transform: translateX(3px);
+      }
+
+      .btn-ghost:active {
+        transform: translateY(2px);
+        border-color: #32324a;
+        background: linear-gradient(180deg, #141420 0%, #101018 100%);
+        box-shadow:
+          0 1px 0 #0a0a12,
+          0 4px 12px rgba(0, 0, 0, 0.22);
+      }
+
+      .btn-ghost:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--cyan) 65%, transparent);
+        outline-offset: 3px;
+      }
+
+      .btn-primary:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--cyan) 65%, transparent);
+        outline-offset: 3px;
+      }
+
+      .btn-icon {
+        display: inline-flex;
+        font-size: 18px;
+        line-height: 1;
+        transition: transform 0.15s ease;
+      }
+
+      .btn-github-icon svg {
+        display: block;
+        width: 18px;
+        height: 18px;
+      }
+
+      .btn-primary:hover .btn-icon {
+        transform: translateY(2px);
       }
 
       .platforms {
@@ -170,9 +372,24 @@
         color: var(--muted);
       }
 
+      /* Stacked button label (main + auto-detected platform line) */
+      .btn-label {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-start;
+        line-height: 1.12;
+      }
+
+      .btn-label__sub {
+        font-size: 12px;
+        font-weight: 600;
+        opacity: 0.72;
+        margin-top: 2px;
+      }
+
       /* Shared media frame */
       .frame {
-        margin: 56px auto 0;
+        margin: 24px auto 0;
         border: 1px solid var(--line);
         border-radius: 16px;
         overflow: hidden;
@@ -187,23 +404,196 @@
         height: auto;
       }
 
+      .video-player {
+        position: relative;
+      }
+
+      .video-player__play {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: rgba(8, 8, 12, 0.42);
+        cursor: pointer;
+        transition:
+          opacity 0.2s ease,
+          visibility 0.2s ease,
+          background 0.2s ease;
+      }
+
+      .video-player__play:hover {
+        background: rgba(8, 8, 12, 0.52);
+      }
+
+      .video-player__play-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow:
+          0 10px 40px rgba(0, 0, 0, 0.45),
+          0 0 0 12px rgba(255, 255, 255, 0.08);
+        transition: transform 0.15s ease;
+      }
+
+      .video-player__play-icon::before {
+        content: "";
+        display: block;
+        width: 0;
+        height: 0;
+        margin-left: 8px;
+        border-style: solid;
+        border-width: 16px 0 16px 28px;
+        border-color: transparent transparent transparent #05050a;
+      }
+
+      .video-player__play:hover .video-player__play-icon {
+        transform: scale(1.06);
+      }
+
+      .video-player__play:active .video-player__play-icon {
+        transform: scale(0.98);
+      }
+
+      .video-player.is-playing .video-player__play {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
       /* Demo */
       .section {
         padding: 80px 0;
       }
 
+      #demo {
+        padding: 48px 0 80px;
+      }
+
       .section h2 {
         font-size: clamp(26px, 4vw, 36px);
         text-align: center;
-        margin: 0 0 12px;
+        margin: 0 0 0px;
         letter-spacing: -0.01em;
       }
 
       .section .lead {
         text-align: center;
         color: var(--muted);
-        max-width: 560px;
+        max-width: 420px;
         margin: 0 auto;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      #demo .frame {
+        margin: 24px 72px 0;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      #demo .video-player {
+        width: 100%;
+      }
+
+      /* Privacy */
+      #privacy {
+        padding: 24px 0 80px;
+      }
+
+      .privacy-card {
+        position: relative;
+        max-width: 760px;
+        margin: 32px auto 0;
+        padding: 40px 36px;
+        border-radius: 18px;
+        background: var(--bg-soft);
+        border: 1px solid var(--line);
+        overflow: hidden;
+      }
+
+      .privacy-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        padding: 1px;
+        border-radius: 18px;
+        background: var(--accent-grad);
+        -webkit-mask:
+          linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.55;
+        pointer-events: none;
+      }
+
+      .privacy-card__lead {
+        text-align: center;
+        font-size: clamp(18px, 2.6vw, 22px);
+        font-weight: 700;
+        margin: 0 0 24px;
+        letter-spacing: -0.01em;
+      }
+
+      .privacy-card__lead .grad {
+        background: var(--accent-grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .privacy-points {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px 28px;
+      }
+
+      .privacy-points li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        color: var(--fg);
+        font-size: 15px;
+        line-height: 1.45;
+      }
+
+      .privacy-points li b {
+        font-weight: 700;
+      }
+
+      .privacy-points li span {
+        color: var(--muted);
+      }
+
+      .privacy-points li::before {
+        content: "✓";
+        flex-shrink: 0;
+        font-weight: 800;
+        color: var(--cyan);
+        line-height: 1.45;
+      }
+
+      .privacy-note {
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+        margin: 24px auto 0;
+        max-width: 560px;
+      }
+
+      @media (max-width: 560px) {
+        .privacy-points {
+          grid-template-columns: 1fr;
+        }
       }
 
       /* Footer */
@@ -247,46 +637,135 @@
         margin-top: 18px;
         font-size: 13px;
       }
+
+      .foot-meta a {
+        color: var(--fg);
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.15s ease;
+      }
+
+      .foot-meta a:hover {
+        color: var(--cyan);
+      }
     </style>
   </head>
   <body>
     <!-- HERO -->
-    <header class="hero">
+    <section class="hero">
+      <header class="site-header">
+        <div class="container-xl site-header__inner">
+          <a
+            class="brand"
+            href="index.html"
+            aria-label="Agentdex home"
+            data-ph-event="landing_nav_clicked"
+            data-ph-nav="brand"
+          >
+            <img class="brand__logo" src="logo.svg" width="30" height="30" alt="" />
+            <span class="brand__name">Agentdex</span>
+          </a>
+          <nav class="site-nav">
+            <a href="#demo" data-ph-event="landing_nav_clicked" data-ph-nav="demo">Demo</a>
+            <a href="download.html" data-ph-event="landing_nav_clicked" data-ph-nav="download">Download</a>
+            <a
+              class="site-nav__github"
+              href="https://github.com/CaptainYouz/agentdex"
+              target="_blank"
+              rel="noopener"
+              data-ph-event="landing_nav_clicked"
+              data-ph-nav="github"
+            >
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" role="img" aria-hidden="true">
+                <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+              </svg>
+              <span>GitHub</span>
+            </a>
+          </nav>
+        </div>
+      </header>
       <div class="wrap">
-        <img src="logo.svg" width="84" height="84" alt="Agentdex" style="display:block;margin:0 auto 24px;border-radius:20px;" />
-        <span class="eyebrow">Cursor · Claude · Codex</span>
         <h1>Every AI skill, agent, and rule —<br /><span class="grad">in one place.</span></h1>
         <p class="sub">
-          Agentdex scans Cursor, Claude, and Codex on your machine and turns scattered
-          skills, subagents, rules, and CLAUDE.md files into one searchable, offline
-          catalog.
+          Agentdex turns scattered skills, agents, and rules files from
+          your different harness and projects into one searchable, offline catalog.
         </p>
         <div class="buttons">
-          <a class="btn btn-primary" href="https://github.com/CaptainYouz/agentdex/releases/latest">
-            ↓ Download Agentdex
+          <a
+            class="btn btn-primary"
+            href="download.html"
+            data-agentdex-cta="landing"
+            data-ph-event="landing_cta_clicked"
+            data-ph-placement="hero"
+            data-ph-cta="download"
+          >
+            <span class="btn-icon" aria-hidden="true">↓</span>
+            <span class="btn-label">
+              <span class="btn-label__main">Download Agentdex</span>
+              <span class="btn-label__sub" data-agentdex-cta-sub hidden></span>
+            </span>
           </a>
-          <a class="btn btn-ghost" href="https://github.com/CaptainYouz/agentdex">
+          <a
+            class="btn btn-ghost"
+            href="https://github.com/CaptainYouz/agentdex"
+            data-ph-event="landing_cta_clicked"
+            data-ph-placement="hero"
+            data-ph-cta="github"
+          >
+            <span class="btn-icon btn-github-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" role="img">
+                <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+              </svg>
+            </span>
             See on GitHub
           </a>
         </div>
         <p class="platforms">macOS · Windows · Linux — offline, no account, no cloud.</p>
-
-        <div class="frame">
-          <img src="screenshot.png" alt="Agentdex — one searchable catalog of every skill, agent, rule, and context file" />
-        </div>
       </div>
-    </header>
+    </section>
 
     <!-- DEMO -->
     <section class="section" id="demo">
       <div class="wrap">
         <h2>See it in action</h2>
-        <p class="lead">A quick walkthrough of scanning, searching, previewing, and editing your configs.</p>
-        <div class="frame">
-          <video controls preload="metadata" poster="screenshot.png">
+        <p class="lead">Search, preview, and edit — all on your machine.</p>
+      </div>
+      <div class="frame">
+        <div class="video-player" data-video-player>
+          <video controls preload="metadata" poster="screenshot.png" data-demo-video>
             <source src="demo.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
+          <button
+            type="button"
+            class="video-player__play"
+            aria-label="Play demo video"
+            data-video-play
+            data-ph-event="landing_demo_play_clicked"
+            data-ph-placement="demo"
+          >
+            <span class="video-player__play-icon" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRIVACY -->
+    <section class="section" id="privacy">
+      <div class="wrap">
+        <h2>Your files never leave your machine</h2>
+        <p class="lead">No internet needed. No account. No data collected.</p>
+        <div class="privacy-card">
+          <p class="privacy-card__lead">Agentdex is <span class="grad">fully local and fully private.</span></p>
+          <ul class="privacy-points">
+            <li><div><b>Runs 100% offline</b><br /><span>No internet connection required to scan, search, or edit.</span></div></li>
+            <li><div><b>No data collected by the app</b><br /><span>The desktop app has zero telemetry. Everything is 100% local.</span></div></li>
+            <li><div><b>No account, no cloud</b><br /><span>Nothing to sign up for. No backend. Nothing leaves your device.</span></div></li>
+            <li><div><b>Reads local files only</b><br /><span>Just the skill, agent, and rules files under your home directory.</span></div></li>
+          </ul>
+          <p class="privacy-note">
+            The only optional network access is checking GitHub Releases for app updates — entirely under your control.
+          </p>
         </div>
       </div>
     </section>
@@ -297,17 +776,56 @@
         <div class="foot-grid">
           <span class="foot-brand">Agentdex</span>
           <nav class="foot-links">
-            <a href="https://github.com/CaptainYouz/agentdex">GitHub</a>
-            <a href="https://github.com/CaptainYouz/agentdex/releases/latest">Download</a>
-            <a href="https://github.com/CaptainYouz/agentdex/blob/main/LICENSE">License (MIT)</a>
-            <a href="https://github.com/CaptainYouz/agentdex/blob/main/README.md">Docs</a>
+            <a href="https://github.com/CaptainYouz/agentdex" data-ph-event="landing_footer_link_clicked" data-ph-link="github">GitHub</a>
+            <a href="https://github.com/CaptainYouz/agentdex/releases/latest" data-ph-event="landing_footer_link_clicked" data-ph-link="download">Download</a>
+            <a href="https://github.com/CaptainYouz/agentdex/blob/main/LICENSE" data-ph-event="landing_footer_link_clicked" data-ph-link="license">License (MIT)</a>
+            <a href="https://github.com/CaptainYouz/agentdex/blob/main/README.md" data-ph-event="landing_footer_link_clicked" data-ph-link="docs">Docs</a>
           </nav>
         </div>
         <p class="foot-meta">
-          Offline. No account, no cloud, no telemetry. Built with Tauri 2, Vue 3, and Rust.<br />
-          Built by Anas Mammeri · © 2026 · MIT License.
+          Offline. No account, no cloud, no telemetry.<br />
+          Built by <a href="https://x.com/anas_build_" rel="me noopener noreferrer" target="_blank" data-ph-event="landing_footer_link_clicked" data-ph-link="twitter">Anas</a> · © 2026 · MIT License.
         </p>
       </div>
     </footer>
+    <!-- AGENTDEX_POSTHOG -->
+    <script>
+      function setupDemoVideoPlayer() {
+        const playerRoot = document.querySelector('[data-video-player]')
+        if (!playerRoot) return
+
+        const video = playerRoot.querySelector('[data-demo-video]')
+        const playButton = playerRoot.querySelector('[data-video-play]')
+        if (!video || !playButton) return
+
+        function showPlayOverlay() {
+          playerRoot.classList.remove('is-playing')
+        }
+
+        function hidePlayOverlay() {
+          playerRoot.classList.add('is-playing')
+        }
+
+        function syncPlayOverlay() {
+          if (video.paused && (video.currentTime < 0.25 || video.ended)) {
+            showPlayOverlay()
+            return
+          }
+
+          hidePlayOverlay()
+        }
+
+        playButton.addEventListener('click', () => {
+          void video.play()
+        })
+
+        video.addEventListener('play', hidePlayOverlay)
+        video.addEventListener('pause', syncPlayOverlay)
+        video.addEventListener('ended', showPlayOverlay)
+      }
+
+      setupDemoVideoPlayer()
+    </script>
+    <script src="download.runtime.js"></script>
   </body>
 </html>
