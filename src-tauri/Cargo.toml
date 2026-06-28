@@ -1,6 +1,6 @@
 [package]
 name = "agentdex"
-version = "0.1.0"
+version = "0.1.1"
 description = "Your local command center for AI skills, agents, and rules"
 authors = ["Anas"]
 edition = "2021"
