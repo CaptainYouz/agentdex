@@ -33,7 +33,7 @@ On Windows, `~` is `%USERPROFILE%` (e.g. `%USERPROFILE%\.cursor\...`).
 ### macOS / Linux (from source)
 
 ```bash
-git clone <your-repo-url>
+git clone git@github.com:CaptainYouz/agentdex.git
 cd agentdex   # or your clone folder name
 pnpm install
 pnpm tauri dev     # development
@@ -42,7 +42,7 @@ pnpm tauri build   # production bundle
 
 ### Windows / macOS / Linux (pre-built)
 
-Download the latest release for your OS from [GitHub Releases](https://github.com/YOUR_ORG/agentdex/releases).
+Download the latest release for your OS from [GitHub Releases](https://github.com/CaptainYouz/agentdex/releases).
 
 | OS | Artifacts |
 |----|-----------|
