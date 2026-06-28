@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.svg" width="120" alt="Agentdex" /></p>
+
 # Agentdex
 
 **Your local command center for AI skills, agents, and rules** — a local desktop app to browse your Cursor, Claude, and Codex configs in one place.
@@ -55,6 +57,14 @@ Download the latest release for your OS from [GitHub Releases](https://github.co
 | Windows | `.msi` and/or `.exe` (unsigned) |
 | Linux | `.AppImage` and `.deb` |
 | macOS | `.dmg` |
+
+**macOS — "Agentdex is damaged and can't be opened":** the build is unsigned/un-notarized, so macOS quarantines it. After dragging the app to Applications, clear the quarantine flag:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Agentdex.app
+```
+
+Then open it normally. (This is expected for unsigned apps; notarization is on the roadmap.)
 
 **Windows SmartScreen:** unsigned builds may show “Windows protected your PC.” Click **More info** → **Run anyway** to install.
 

@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ax" x1="120" y1="96" x2="392" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00F0FF"/>
+      <stop offset="0.5" stop-color="#2A6CFF"/>
+      <stop offset="1" stop-color="#FF2BD0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.6">
+      <stop offset="0" stop-color="#2A6CFF" stop-opacity="0.35"/>
+      <stop offset="0.55" stop-color="#7A2BFF" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- tile -->
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="#0B0B14"/>
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#glow)"/>
+  <rect x="1.5" y="1.5" width="509" height="509" rx="114.5" fill="none" stroke="#23233A" stroke-width="3"/>
+
+  <!-- agent node (head) -->
+  <circle cx="256" cy="120" r="34" fill="url(#ax)"/>
+
+  <!-- A monogram -->
+  <path d="M150 392 L256 178 L362 392" fill="none" stroke="url(#ax)" stroke-width="46"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M196 320 L316 320" fill="none" stroke="url(#ax)" stroke-width="46" stroke-linecap="round"/>
+</svg>
