@@ -49,14 +49,11 @@ Grab the build for your platform from the **[download page](https://captainyouz.
 | Windows | `.msi` / `.exe` (unsigned) |
 | Linux | `.AppImage` and `.deb` |
 
-Builds are not yet code-signed/notarized, so each OS warns on first launch:
+First launch notes:
 
-- **macOS** — “Agentdex is damaged and can't be opened.” After moving the app to Applications, clear the quarantine flag, then open normally:
-  ```bash
-  xattr -dr com.apple.quarantine /Applications/Agentdex.app
-  ```
-- **Windows** — SmartScreen may show “Windows protected your PC.” Click **More info → Run anyway**.
-- **Linux** — make the AppImage executable (`chmod +x`) and run it, or install the `.deb` with your package manager.
+- **macOS** — signed with an Apple Developer ID and notarized by Apple, so it opens normally with no extra steps.
+- **Windows** — builds are unsigned, so SmartScreen may show “Windows protected your PC.” Click **More info → Run anyway**.
+- **Linux** — make the AppImage executable (`chmod +x`) and run it, or install the `.deb` / `.rpm` with your package manager.
 
 ### Run from source
 
