@@ -29,3 +29,8 @@ src-tauri/target/
 # Internal / not-for-publication
 LAUNCH.md
 plan-*.md
+
+# Env (PostHog key is injected at deploy from a repo secret, never committed)
+docs/.env
+docs/.env.*
+!docs/.env.example
