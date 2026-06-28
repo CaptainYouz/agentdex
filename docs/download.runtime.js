@@ -33,10 +33,12 @@
   const ASSET_MATCHERS = {
     'mac-arm64': /(aarch64|arm64)\S*\.dmg$/,
     'mac-x64': /(x64|x86_64|intel)\S*\.dmg$/,
+    'mac-universal': /\.dmg$/,
     'windows-exe': /\.exe$/,
     'windows-msi': /\.msi$/,
     'linux-appimage': /\.appimage$/,
     'linux-deb': /\.deb$/,
+    'linux-rpm': /\.rpm$/,
   }
 
   function detectOs() {
@@ -132,14 +134,17 @@
 
   // Preferred asset key(s) for a one-click download per OS, most-preferred first.
   // macOS with unknown architecture returns no keys → the visitor chooses.
+  // The macOS build is a single universal .dmg (Apple Silicon + Intel), so any
+  // Mac resolves to it — arch-specific keys are tried first in case a future
+  // build ships per-arch .dmgs.
   function ctaAssetKeys(os, arch) {
     if (os === 'mac') {
-      if (arch === 'x64') return ['mac-x64']
-      if (arch === 'arm64') return ['mac-arm64']
-      return []
+      if (arch === 'x64') return ['mac-x64', 'mac-universal']
+      if (arch === 'arm64') return ['mac-arm64', 'mac-universal']
+      return ['mac-universal']
     }
     if (os === 'windows') return ['windows-exe', 'windows-msi']
-    if (os === 'linux') return ['linux-appimage', 'linux-deb']
+    if (os === 'linux') return ['linux-appimage', 'linux-deb', 'linux-rpm']
     return []
   }
 
@@ -147,7 +152,7 @@
     if (os === 'mac') {
       if (arch === 'arm64') return 'for macOS · Apple Silicon'
       if (arch === 'x64') return 'for macOS · Intel'
-      return 'for macOS · Apple Silicon / Intel'
+      return 'for macOS · Apple Silicon & Intel'
     }
     if (os === 'windows') return 'for Windows'
     if (os === 'linux') return 'for Linux'
