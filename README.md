@@ -144,6 +144,4 @@ The [release workflow](.github/workflows/release.yml) publishes a **draft** GitH
 
 ## License
 
-[MIT](./LICENSE) © [Anas](https://x.com/anas_build_)
-
-Built by [@anas_build_](https://x.com/anas_build_) on X — follow along for updates.
+[MIT](./LICENSE) © Built by [Anas](https://x.com/anas_build_)
