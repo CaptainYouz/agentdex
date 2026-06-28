@@ -70,6 +70,22 @@ Then open it normally. (This is expected for unsigned apps; notarization is on t
 
 **Linux:** make the AppImage executable (`chmod +x`) and run it, or install the `.deb` with your package manager.
 
+## Updates
+
+Agentdex has a built-in auto-updater (Tauri updater plugin). On launch it checks the
+latest GitHub Release for a newer signed build; if one exists, a banner offers
+**Install & restart** — the new version downloads, installs in place, and relaunches.
+
+Update packages are signed with a dedicated minisign key (separate from OS code
+signing), so updates are verified even though the app is not yet notarized.
+
+> **Note:** auto-update fetches assets from public GitHub Release downloads. While the
+> repo is private, release assets require auth, so auto-update is effectively disabled
+> until the repo/releases are public.
+
+Each release is published by tagging a version — CI builds, signs, and uploads the
+installers plus a `latest.json` manifest the app reads.
+
 ## Path equivalents
 
 | macOS / Linux | Windows |
