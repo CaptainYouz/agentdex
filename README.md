@@ -22,9 +22,15 @@ For AI assistants working on this repo, see [CLAUDE.md](./CLAUDE.md).
 **Global — Claude**
 - `~/.claude/plugins/cache/**/skills/` — Claude plugin skills
 - `~/.claude/agents/` — Claude subagents
+- `~/CLAUDE.md` (or `~/claude.md`) — global context file
+
+**Global — Codex**
+- `~/.codex/skills/` — your user skills
+- `~/.codex/plugins/cache/**/skills/` — Codex plugin skills
+- `~/.codex/agents/` — Codex subagents
 
 **Global — Shared**
-- `~/.agents/skills/` — skills used by both platforms
+- `~/.agents/skills/` — skills used across platforms
 
 On Windows, `~` is `%USERPROFILE%` (e.g. `%USERPROFILE%\.cursor\...`).
 
