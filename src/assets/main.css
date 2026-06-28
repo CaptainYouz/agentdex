@@ -1,0 +1,42 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 400;
+
+  --bg: #111318;
+  --panel: #161920;
+  --panel-muted: #1c2028;
+  --border: #2a2f3a;
+  --text: #e8ecf3;
+  --text-muted: #8b93a7;
+  --accent: #6ea8ff;
+  --accent-soft: rgba(110, 168, 255, 0.1);
+  --badge-selected-bg: #3d6fbf;
+  --badge-selected-border: #5b8fd9;
+  --badge-selected-text: #f4f7fc;
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+button,
+input {
+  font: inherit;
+}
