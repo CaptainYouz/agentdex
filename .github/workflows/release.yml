@@ -46,6 +46,10 @@ jobs:
             librsvg2-dev \
             patchelf
 
+      - name: Add macOS universal targets
+        if: matrix.platform == 'macos-latest'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
       - name: Install dependencies
         run: pnpm install
 
@@ -75,4 +79,5 @@ jobs:
             **macOS:** `.dmg` from assets below.
           releaseDraft: true
           prerelease: false
-          args: --verbose
+          # macOS builds a universal binary (Apple Silicon + Intel); other platforms use the host target.
+          args: ${{ matrix.platform == 'macos-latest' && '--target universal-apple-darwin --verbose' || '--verbose' }}
