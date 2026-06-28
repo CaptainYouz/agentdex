@@ -585,30 +585,18 @@
               </span>
               <span class="platform-card__name">macOS</span>
             </div>
-            <p class="platform-card__note">macOS 11+. Universal not provided — pick your chip.</p>
+            <p class="platform-card__note">macOS 11+. Universal build — runs on Apple Silicon &amp; Intel.</p>
             <ul class="asset-list">
               <li>
                 <a
                   class="asset"
                   href="https://github.com/CaptainYouz/agentdex/releases/latest"
-                  data-agentdex-asset="mac-arm64"
+                  data-agentdex-asset="mac-universal"
                   data-ph-event="download_button_clicked"
                   data-ph-platform="mac"
-                  data-ph-format="dmg-arm64"
+                  data-ph-format="dmg-universal"
                 >
-                  Apple Silicon <span class="asset__ext">.dmg</span>
-                </a>
-              </li>
-              <li>
-                <a
-                  class="asset"
-                  href="https://github.com/CaptainYouz/agentdex/releases/latest"
-                  data-agentdex-asset="mac-x64"
-                  data-ph-event="download_button_clicked"
-                  data-ph-platform="mac"
-                  data-ph-format="dmg-x64"
-                >
-                  Intel <span class="asset__ext">.dmg</span>
+                  Apple Silicon &amp; Intel <span class="asset__ext">.dmg</span>
                 </a>
               </li>
             </ul>
@@ -663,7 +651,7 @@
               </span>
               <span class="platform-card__name">Linux</span>
             </div>
-            <p class="platform-card__note">x86_64. AppImage runs anywhere; .deb for Debian/Ubuntu.</p>
+            <p class="platform-card__note">x86_64. AppImage runs anywhere; .deb for Debian/Ubuntu, .rpm for Fedora.</p>
             <ul class="asset-list">
               <li>
                 <a
@@ -687,6 +675,18 @@
                   data-ph-format="deb"
                 >
                   Debian package <span class="asset__ext">.deb</span>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="asset"
+                  href="https://github.com/CaptainYouz/agentdex/releases/latest"
+                  data-agentdex-asset="linux-rpm"
+                  data-ph-event="download_button_clicked"
+                  data-ph-platform="linux"
+                  data-ph-format="rpm"
+                >
+                  Fedora package <span class="asset__ext">.rpm</span>
                 </a>
               </li>
             </ul>
