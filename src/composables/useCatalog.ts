@@ -20,6 +20,7 @@ import { mergeCatalogGroups } from '@/utils/mergeCatalogGroups'
 import { pathsMatch } from '@/utils/normalizeFilePath'
 
 const catalog = ref<CatalogResponse | null>(null)
+const scanRoot = ref<string | null>(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
 const searchQuery = ref('')
@@ -38,7 +39,7 @@ export function useCatalog() {
     errorMessage.value = ''
 
     try {
-      catalog.value = await invoke<CatalogResponse>('scan_catalog')
+      catalog.value = await invoke<CatalogResponse>('scan_catalog', { root: scanRoot.value })
       selectedItem.value = findFirstVisibleItem()
       await loadPreviewForSelectedItem()
     } catch (error) {
@@ -47,6 +48,16 @@ export function useCatalog() {
     } finally {
       isLoading.value = false
     }
+  }
+
+  async function setScanRoot(nextRoot: string | null) {
+    scanRoot.value = nextRoot
+    // Clear the current catalog so the skeleton (shown while there is no
+    // catalog) appears during the re-scan, rather than the old folder's items.
+    catalog.value = null
+    selectedItem.value = null
+    activeFilter.value = 'all'
+    await loadCatalog()
   }
 
   async function revealItem(item: CatalogItem) {
@@ -227,10 +238,12 @@ export function useCatalog() {
     revealItem,
     revealSelectedItem,
     savePreviewContent,
+    scanRoot,
     searchQuery,
     selectItem,
     selectedItem,
     setFilter,
+    setScanRoot,
     setSearchQuery,
     worktreeReloadToken,
   }

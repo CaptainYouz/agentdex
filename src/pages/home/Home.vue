@@ -1,5 +1,12 @@
 <template>
   <div class="home-page">
+    <div
+      v-if="isLoading"
+      class="scan-progress"
+      role="status"
+      aria-label="Scanning"
+    />
+
     <header class="page-header">
       <div class="header-left">
         <h1>{{ APP_HEADER_TITLE }}</h1>
@@ -8,14 +15,26 @@
           :summary="catalog?.summary ?? null"
         />
       </div>
-      <button
-        class="refresh-button"
-        :disabled="isLoading"
-        type="button"
-        @click="loadCatalog()"
-      >
-        {{ isLoading ? '…' : '↻' }}
-      </button>
+      <div class="header-right">
+        <button
+          v-if="displayedRoot"
+          class="scan-root"
+          type="button"
+          :title="`Scanning from ${displayedRoot} — click to choose a different folder`"
+          @click="switchScanRoot"
+        >
+          <CodiconIcon name="folder-opened" />
+          <span class="scan-root__path">{{ displayedRoot }}</span>
+        </button>
+        <button
+          class="refresh-button"
+          :disabled="isLoading"
+          type="button"
+          @click="loadCatalog()"
+        >
+          {{ isLoading ? '…' : '↻' }}
+        </button>
+      </div>
     </header>
 
     <div class="toolbar">
@@ -56,18 +75,13 @@
           </button>
         </div>
 
-        <p
-          v-if="isLoading"
-          class="status-line"
-        >
-          Scanning...
-        </p>
+        <CatalogSkeleton v-if="isLoading && !catalog" />
 
         <p
           v-else-if="visibleGroups.length === 0"
           class="status-line"
         >
-          No matches
+          {{ isLoading ? 'Scanning…' : 'No matches' }}
         </p>
 
         <div
@@ -127,6 +141,7 @@
             <template v-if="isWorktreeVisible">
               <WorktreePanel
                 :reload-token="worktreeReloadToken"
+                :scan-root="scanRoot"
                 :selected-item="selectedItem"
                 @reveal="revealPathInFileManager"
                 @select-file="handleWorktreeFileSelect"
@@ -143,8 +158,10 @@
           </div>
 
           <section class="editor-pane-details">
+            <DetailSkeleton v-if="isLoading && !catalog" />
+
             <WorktreeFileDetail
-              v-if="isWorktreeDetailsActive && worktreeFileSelection"
+              v-else-if="isWorktreeDetailsActive && worktreeFileSelection"
               :delete-item="handleDeleteWorktreeFile"
               :file-stats="worktreeFileStats"
               :is-deleting="isDeletingWorktreeFile"
@@ -179,9 +196,13 @@
 </template>
 
 <script setup lang="ts">
+import { invoke } from '@tauri-apps/api/core'
+import { open } from '@tauri-apps/plugin-dialog'
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
+import CatalogSkeleton from '@/components/CatalogSkeleton.vue'
 import CodiconIcon from '@/components/CodiconIcon.vue'
+import DetailSkeleton from '@/components/DetailSkeleton.vue'
 import FilterTabs from '@/components/FilterTabs.vue'
 import GroupSection from '@/components/GroupSection.vue'
 import ItemDetail from '@/components/ItemDetail.vue'
@@ -223,10 +244,12 @@ const {
   revealItem,
   revealSelectedItem,
   savePreviewContent,
+  scanRoot,
   searchQuery,
   selectItem,
   selectedItem,
   setFilter,
+  setScanRoot,
   setSearchQuery,
   worktreeReloadToken,
 } = useCatalog()
@@ -358,8 +381,36 @@ async function handleDeleteWorktreeFile(): Promise<boolean> {
   return true
 }
 
+const homeDirectoryPath = ref<string | null>(null)
+const displayedRoot = computed(() => scanRoot.value ?? homeDirectoryPath.value)
+
+async function loadHomeDirectory() {
+  try {
+    homeDirectoryPath.value = await invoke<string>('get_home_directory')
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : String(error)
+  }
+}
+
+async function switchScanRoot() {
+  try {
+    const selectedPath = await open({
+      directory: true,
+      multiple: false,
+      title: 'Choose a folder to scan',
+    })
+
+    if (typeof selectedPath === 'string') {
+      await setScanRoot(selectedPath)
+    }
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : String(error)
+  }
+}
+
 onMounted(() => {
   void loadCatalog()
+  void loadHomeDirectory()
 })
 </script>
 
@@ -371,6 +422,45 @@ onMounted(() => {
   height: 100dvh;
   overflow: hidden;
   padding: 0.85rem;
+}
+
+/* Non-blocking scan indicator: a thin indeterminate bar pinned to the top.
+   The rest of the UI stays visible and interactive while a scan runs. */
+.scan-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  overflow: hidden;
+  background: var(--accent-soft);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.scan-progress::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: var(--accent);
+  animation: scan-progress-slide 1.1s ease-in-out infinite;
+}
+
+@keyframes scan-progress-slide {
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-progress::before {
+    animation-duration: 2.4s;
+  }
 }
 
 .page-header {
@@ -393,6 +483,42 @@ h1 {
   font-size: 1rem;
   font-weight: 600;
   margin: 0;
+  white-space: nowrap;
+}
+
+.header-right {
+  align-items: center;
+  display: flex;
+  flex-shrink: 1;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.scan-root {
+  align-items: center;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.72rem;
+  gap: 0.3rem;
+  line-height: 1;
+  max-width: 22rem;
+  min-width: 0;
+  padding: 0.25rem 0.5rem;
+}
+
+.scan-root:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--text);
+}
+
+.scan-root__path {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

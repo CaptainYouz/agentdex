@@ -9,81 +9,55 @@ use crate::types::{
     CatalogGroup, CatalogItem, CatalogResponse, CatalogSummary, ItemKind, ItemPlatform, ItemScope,
 };
 
-const CURSOR_GLOBAL_SKILL_SOURCES: [(&str, &[&str]); 2] = [
-    ("Cursor Built-in", &[".cursor", "skills-cursor"]),
-    ("User Skills", &[".cursor", "skills"]),
-];
-
-const SHARED_GLOBAL_SKILL_SOURCES: [(&str, &[&str]); 1] =
-    [("Personal Agents Skills", &[".agents", "skills"])];
-
-const CURSOR_PLUGIN_SEGMENTS: &[&str] = &[".cursor", "plugins", "cache"];
-const CLAUDE_PLUGIN_SEGMENTS: &[&str] = &[".claude", "plugins", "cache"];
-const CODEX_PLUGIN_SEGMENTS: &[&str] = &[".codex", "plugins", "cache"];
-
-const CODEX_GLOBAL_SKILL_SOURCES: [(&str, &[&str]); 1] = [("User Skills", &[".codex", "skills"])];
-
 const CONTEXT_FILE_NAMES: [&str; 2] = ["CLAUDE.md", "claude.md"];
 
-fn join_segments(base: &Path, segments: &[&str]) -> PathBuf {
-    segments
-        .iter()
-        .fold(base.to_path_buf(), |path, segment| path.join(segment))
-}
-
-pub fn build_catalog(home_directory: &Path) -> CatalogResponse {
+/// Scan a base directory for skills, agents, rules, and context.
+///
+/// Classification is purely structural:
+/// - A `.cursor` / `.claude` / `.codex` / `.agents` directory **at the root of
+///   the base** holds **global** items.
+/// - The same config directory found in **any other folder** makes that folder
+///   a **project**, named after the folder that contains the config directory.
+/// - `CLAUDE.md` / `claude.md` at the base root is global context; in any other
+///   folder it is that folder's project context.
+///
+/// Items are only collected from inside the config directories (plus context
+/// files). Noise directories (node_modules, Library, caches, …) are skipped.
+pub fn build_catalog(base_directory: &Path) -> CatalogResponse {
     let mut items = Vec::new();
     let mut collected_context_paths: HashSet<String> = HashSet::new();
-    collect_cursor_global_skills(home_directory, &mut items);
-    collect_codex_global_skills(home_directory, &mut items);
-    collect_shared_global_skills(home_directory, &mut items);
-    collect_plugin_skills(
-        home_directory,
-        CURSOR_PLUGIN_SEGMENTS,
-        ItemPlatform::Cursor,
-        &mut items,
-    );
-    collect_plugin_skills(
-        home_directory,
-        CLAUDE_PLUGIN_SEGMENTS,
-        ItemPlatform::Claude,
-        &mut items,
-    );
-    collect_plugin_skills(
-        home_directory,
-        CODEX_PLUGIN_SEGMENTS,
-        ItemPlatform::Codex,
-        &mut items,
-    );
-    collect_global_agents(
-        &join_segments(home_directory, &[".cursor", "agents"]),
-        "Global Agents",
-        ItemPlatform::Cursor,
-        &mut items,
-    );
-    collect_global_agents(
-        &join_segments(home_directory, &[".claude", "agents"]),
-        "Global Agents",
-        ItemPlatform::Claude,
-        &mut items,
-    );
-    collect_global_agents(
-        &join_segments(home_directory, &[".codex", "agents"]),
-        "Global Agents",
-        ItemPlatform::Codex,
-        &mut items,
-    );
-    collect_global_rules(
-        &join_segments(home_directory, &[".cursor", "rules"]),
-        "Global Rules",
-        ItemPlatform::Cursor,
-        &mut items,
-    );
-    collect_global_context(home_directory, &mut collected_context_paths, &mut items);
 
-    let projects_root = home_directory.join("Development");
-    collect_project_items(&projects_root, &mut items);
-    collect_project_context(&projects_root, &mut collected_context_paths, &mut items);
+    if base_directory.exists() {
+        let mut iterator = WalkDir::new(base_directory).follow_links(false).into_iter();
+
+        while let Some(result) = iterator.next() {
+            let Ok(entry) = result else {
+                continue;
+            };
+            let path = entry.path();
+
+            if entry.file_type().is_dir() {
+                let directory_name = path.file_name().and_then(|value| value.to_str()).unwrap_or("");
+
+                if is_noise_directory(path, directory_name) {
+                    iterator.skip_current_dir();
+                    continue;
+                }
+
+                if platform_for_config_directory(directory_name).is_some() {
+                    collect_from_config_directory(base_directory, path, &mut items);
+                    // Items inside config dirs are handled here; don't descend again.
+                    iterator.skip_current_dir();
+                }
+
+                continue;
+            }
+
+            if entry.file_type().is_file() {
+                collect_context_file(base_directory, path, &mut collected_context_paths, &mut items);
+            }
+        }
+    }
 
     items.sort_by(|left, right| left.name.to_lowercase().cmp(&right.name.to_lowercase()));
 
@@ -99,423 +73,238 @@ pub fn build_catalog(home_directory: &Path) -> CatalogResponse {
     }
 }
 
-fn collect_cursor_global_skills(home_directory: &Path, items: &mut Vec<CatalogItem>) {
-    for (category, segments) in CURSOR_GLOBAL_SKILL_SOURCES {
-        let root = join_segments(home_directory, segments);
-        collect_skill_directory(
-            &root,
-            category,
-            ItemPlatform::Cursor,
-            ItemScope::Global,
-            None,
-            items,
-        );
+fn platform_for_config_directory(directory_name: &str) -> Option<ItemPlatform> {
+    match directory_name {
+        ".cursor" => Some(ItemPlatform::Cursor),
+        ".claude" => Some(ItemPlatform::Claude),
+        ".codex" => Some(ItemPlatform::Codex),
+        ".agents" => Some(ItemPlatform::Shared),
+        _ => None,
     }
 }
 
-fn collect_codex_global_skills(home_directory: &Path, items: &mut Vec<CatalogItem>) {
-    for (category, segments) in CODEX_GLOBAL_SKILL_SOURCES {
-        let root = join_segments(home_directory, segments);
-        collect_skill_directory(
-            &root,
-            category,
-            ItemPlatform::Codex,
-            ItemScope::Global,
-            None,
-            items,
-        );
-    }
-}
-
-fn collect_shared_global_skills(home_directory: &Path, items: &mut Vec<CatalogItem>) {
-    for (category, segments) in SHARED_GLOBAL_SKILL_SOURCES {
-        let root = join_segments(home_directory, segments);
-        collect_skill_directory(
-            &root,
-            category,
-            ItemPlatform::Shared,
-            ItemScope::Global,
-            None,
-            items,
-        );
-    }
-}
-
-fn collect_plugin_skills(
-    home_directory: &Path,
-    marker_segments: &[&str],
-    platform: ItemPlatform,
-    items: &mut Vec<CatalogItem>,
-) {
-    let cache_root = join_segments(home_directory, marker_segments);
-    if !cache_root.exists() {
-        return;
-    }
-
-    for entry in WalkDir::new(&cache_root)
-        .follow_links(false)
-        .into_iter()
-        .filter_map(Result::ok)
-    {
-        if entry.file_name() != "SKILL.md" {
-            continue;
-        }
-
-        let skill_path = entry.path().to_path_buf();
-        let plugin_name = extract_plugin_name(&skill_path, marker_segments);
-        let category = format!("Plugin · {plugin_name}");
-        push_skill_item(
-            &skill_path,
-            &category,
-            platform.clone(),
-            ItemScope::Global,
-            None,
-            items,
-        );
-    }
-}
-
-fn collect_global_agents(
-    agents_root: &Path,
-    category: &str,
-    platform: ItemPlatform,
-    items: &mut Vec<CatalogItem>,
-) {
-    if !agents_root.exists() {
-        return;
-    }
-
-    let entries = match fs::read_dir(agents_root) {
-        Ok(entries) => entries,
-        Err(_) => return,
-    };
-
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|value| value.to_str()) != Some("md") {
-            continue;
-        }
-        push_agent_item(&path, category, platform.clone(), ItemScope::Global, None, items);
-    }
-}
-
-fn collect_global_context(
-    home_directory: &Path,
-    collected_context_paths: &mut HashSet<String>,
-    items: &mut Vec<CatalogItem>,
-) {
-    for file_name in CONTEXT_FILE_NAMES {
-        let context_path = home_directory.join(file_name);
-        if !context_path.is_file() {
-            continue;
-        }
-
-        println!(
-            "[collect_global_context] found global context file: {}",
-            context_path.display()
-        );
-        push_context_item(
-            &context_path,
-            "Global Context",
-            ItemPlatform::Claude,
-            ItemScope::Global,
-            None,
-            collected_context_paths,
-            items,
-        );
-    }
-}
-
-fn collect_project_items(projects_root: &Path, items: &mut Vec<CatalogItem>) {
-    if !projects_root.exists() {
-        println!(
-            "[collect_project_items] projects root does not exist: {}",
-            projects_root.display()
-        );
-        return;
-    }
-
-    let mut handled_projects: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
-
-    for entry in WalkDir::new(projects_root)
-        .follow_links(false)
-        .into_iter()
-        .filter_entry(|entry| !should_skip_entry(entry.path()))
-        .filter_map(Result::ok)
-    {
-        let path = entry.path();
-        if !path.is_dir() {
-            continue;
-        }
-
-        let directory_name = path.file_name().and_then(|value| value.to_str());
-        if directory_name != Some("skills")
-            && directory_name != Some("agents")
-            && directory_name != Some("rules")
-        {
-            continue;
-        }
-
-        let Some(config_directory) = path.parent() else {
-            continue;
-        };
-
-        let platform = match config_directory
-            .file_name()
+/// Directories we never descend into: dependency trees, build output, and
+/// language/tool caches. Skipping them keeps the scan fast and prevents config
+/// dirs vendored inside dependencies (e.g. a `.claude` shipped in a node_modules
+/// package or the Go module cache) from showing up as projects.
+fn is_noise_directory(path: &Path, directory_name: &str) -> bool {
+    // Go module cache lives at `~/go/pkg` — skip `pkg` only under a `go` parent
+    // so real source folders named `pkg` are still scanned.
+    if directory_name == "pkg" {
+        let parent_is_go = path
+            .parent()
+            .and_then(|parent| parent.file_name())
             .and_then(|value| value.to_str())
-        {
-            Some(".cursor") => ItemPlatform::Cursor,
-            Some(".claude") => ItemPlatform::Claude,
-            Some(".codex") => ItemPlatform::Codex,
-            _ => continue,
-        };
-
-        let Some(project_root) = config_directory.parent() else {
-            continue;
-        };
-
-        let project_name = project_root
-            .strip_prefix(projects_root)
-            .map(|relative| relative.display().to_string())
-            .unwrap_or_else(|_| {
-                project_root
-                    .file_name()
-                    .and_then(|value| value.to_str())
-                    .unwrap_or("unknown")
-                    .to_string()
-            });
-
-        let project_key = format!("{project_name}|{}", platform_label(&platform));
-        if !handled_projects.insert(project_key) {
-            continue;
-        }
-
-        let skills_root = config_directory.join("skills");
-        collect_skill_directory(
-            &skills_root,
-            "Project Skills",
-            platform.clone(),
-            ItemScope::Project,
-            Some(project_name.clone()),
-            items,
-        );
-
-        let agents_root = config_directory.join("agents");
-        collect_project_agents(&agents_root, &project_name, platform.clone(), items);
-
-        if platform == ItemPlatform::Cursor || platform == ItemPlatform::Codex {
-            let rules_root = config_directory.join("rules");
-            collect_project_rules(&rules_root, &project_name, platform, items);
+            == Some("go");
+        if parent_is_go {
+            return true;
         }
     }
-}
-
-fn collect_project_context(
-    projects_root: &Path,
-    collected_context_paths: &mut HashSet<String>,
-    items: &mut Vec<CatalogItem>,
-) {
-    if !projects_root.exists() {
-        return;
-    }
-
-    let mut handled_project_roots: std::collections::BTreeSet<String> =
-        std::collections::BTreeSet::new();
-
-    if let Ok(entries) = fs::read_dir(projects_root) {
-        for entry in entries.flatten() {
-            let project_root = entry.path();
-            if !project_root.is_dir() {
-                continue;
-            }
-
-            collect_context_at_project_root(
-                &project_root,
-                projects_root,
-                &mut handled_project_roots,
-                collected_context_paths,
-                items,
-            );
-        }
-    }
-
-    for entry in WalkDir::new(projects_root)
-        .follow_links(false)
-        .into_iter()
-        .filter_entry(|entry| !should_skip_entry(entry.path()))
-        .filter_map(Result::ok)
-    {
-        let path = entry.path();
-        if !path.is_dir() {
-            continue;
-        }
-
-        let directory_name = path.file_name().and_then(|value| value.to_str());
-        if directory_name != Some(".cursor")
-            && directory_name != Some(".claude")
-            && directory_name != Some(".codex")
-        {
-            continue;
-        }
-
-        let Some(project_root) = path.parent() else {
-            continue;
-        };
-
-        collect_context_at_project_root(
-            project_root,
-            projects_root,
-            &mut handled_project_roots,
-            collected_context_paths,
-            items,
-        );
-    }
-}
-
-fn collect_context_at_project_root(
-    project_root: &Path,
-    projects_root: &Path,
-    handled_project_roots: &mut std::collections::BTreeSet<String>,
-    collected_context_paths: &mut HashSet<String>,
-    items: &mut Vec<CatalogItem>,
-) {
-    let project_key = project_root.display().to_string();
-    if !handled_project_roots.insert(project_key) {
-        return;
-    }
-
-    let project_name = project_root
-        .strip_prefix(projects_root)
-        .map(|relative| relative.display().to_string())
-        .unwrap_or_else(|_| {
-            project_root
-                .file_name()
-                .and_then(|value| value.to_str())
-                .unwrap_or("unknown")
-                .to_string()
-        });
-
-    for file_name in CONTEXT_FILE_NAMES {
-        let context_path = project_root.join(file_name);
-        if !context_path.is_file() {
-            continue;
-        }
-
-        println!(
-            "[collect_project_context] found context file for project {project_name}: {}",
-            context_path.display()
-        );
-        push_context_item(
-            &context_path,
-            "Project Context",
-            ItemPlatform::Claude,
-            ItemScope::Project,
-            Some(project_name.clone()),
-            collected_context_paths,
-            items,
-        );
-    }
-}
-
-fn should_skip_entry(path: &Path) -> bool {
-    let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
-        return false;
-    };
 
     matches!(
-        name,
-        "node_modules" | "target" | "dist" | ".git" | "build" | ".next" | "vendor"
+        directory_name,
+        // JS / TS / web build + dep caches
+        "node_modules"
+            | "bower_components"
+            | ".pnpm-store"
+            | ".yarn"
+            | ".turbo"
+            | ".parcel-cache"
+            | ".nuxt"
+            | ".output"
+            | ".svelte-kit"
+            | ".angular"
+            | ".docusaurus"
+            | ".vite"
+            | ".astro"
+            | "jspm_packages"
+            | "web_modules"
+            | ".npm"
+            | ".sass-cache"
+            | ".nyc_output"
+            // Rust
+            | "target"
+            | ".cargo"
+            | ".rustup"
+            // Python
+            | ".venv"
+            | "venv"
+            | "site-packages"
+            | "__pycache__"
+            | ".tox"
+            | ".mypy_cache"
+            | ".pytest_cache"
+            | ".ruff_cache"
+            | ".eggs"
+            | "__pypackages__"
+            | ".nox"
+            | ".ipynb_checkpoints"
+            | ".hatch"
+            | ".pdm-build"
+            // Ruby / Flutter / Elixir / Haskell
+            | ".bundle"
+            | ".dart_tool"
+            | "_build"
+            | "deps"
+            | ".stack-work"
+            | "dist-newstyle"
+            // JVM / Apple
+            | ".gradle"
+            | ".m2"
+            | "Pods"
+            | ".swiftpm"
+            | "DerivedData"
+            | "Carthage"
+            // IaC
+            | ".terraform"
+            | ".terragrunt-cache"
+            | ".serverless"
+            // Editors / VCS / OS
+            | ".vscode"
+            | ".idea"
+            | ".vs"
+            | ".fleet"
+            | ".history"
+            | ".svn"
+            | ".hg"
+            | "$RECYCLE.BIN"
+            | "System Volume Information"
+            | "Library"
+            | ".Trash"
+            // Generic build / caches
+            | "dist"
+            | ".git"
+            | "build"
+            | ".next"
+            | "vendor"
+            | "coverage"
+            | "cache"
+            | ".cache"
+            | "Caches"
     )
 }
 
-fn canonical_context_path(path: &Path) -> PathBuf {
-    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+/// Global when the config directory sits directly in the base; otherwise a
+/// project named after the folder that contains it.
+fn scope_for(base_directory: &Path, container: &Path) -> (ItemScope, Option<String>) {
+    if container == base_directory {
+        return (ItemScope::Global, None);
+    }
+
+    let project_name = container
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    (ItemScope::Project, Some(project_name))
 }
 
-fn collect_global_rules(
-    rules_root: &Path,
-    category: &str,
-    platform: ItemPlatform,
+fn collect_from_config_directory(
+    base_directory: &Path,
+    config_directory: &Path,
     items: &mut Vec<CatalogItem>,
 ) {
-    if !rules_root.exists() {
+    let Some(directory_name) = config_directory.file_name().and_then(|value| value.to_str()) else {
         return;
-    }
-
-    let entries = match fs::read_dir(rules_root) {
-        Ok(entries) => entries,
-        Err(_) => return,
+    };
+    let Some(platform) = platform_for_config_directory(directory_name) else {
+        return;
+    };
+    let Some(container) = config_directory.parent() else {
+        return;
     };
 
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|value| value.to_str()) != Some("mdc") {
-            continue;
-        }
-        push_rule_item(&path, category, platform.clone(), ItemScope::Global, None, items);
-    }
-}
+    let (scope, project_name) = scope_for(base_directory, container);
+    let skills_category = scoped_category("Skills", &scope);
+    let agents_category = scoped_category("Agents", &scope);
+    let rules_category = scoped_category("Rules", &scope);
 
-fn collect_project_rules(
-    rules_root: &Path,
-    project_name: &str,
-    platform: ItemPlatform,
-    items: &mut Vec<CatalogItem>,
-) {
-    if !rules_root.exists() {
-        return;
-    }
-
-    let entries = match fs::read_dir(rules_root) {
-        Ok(entries) => entries,
-        Err(_) => return,
-    };
-
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|value| value.to_str()) != Some("mdc") {
-            continue;
-        }
-        push_rule_item(
-            &path,
-            "Project Rules",
+    // Skills (and the Cursor built-in skills directory).
+    collect_skill_directory(
+        &config_directory.join("skills"),
+        &skills_category,
+        platform.clone(),
+        scope.clone(),
+        project_name.clone(),
+        items,
+    );
+    if platform == ItemPlatform::Cursor {
+        collect_skill_directory(
+            &config_directory.join("skills-cursor"),
+            &skills_category,
             platform.clone(),
-            ItemScope::Project,
-            Some(project_name.to_string()),
+            scope.clone(),
+            project_name.clone(),
             items,
         );
     }
+
+    // Plugin skills under plugins/cache/**.
+    collect_plugin_skills(
+        &config_directory.join("plugins").join("cache"),
+        platform.clone(),
+        scope.clone(),
+        project_name.clone(),
+        items,
+    );
+
+    // Agents (*.md) and rules (*.mdc).
+    collect_agents_directory(
+        &config_directory.join("agents"),
+        &agents_category,
+        platform.clone(),
+        scope.clone(),
+        project_name.clone(),
+        items,
+    );
+    collect_rules_directory(
+        &config_directory.join("rules"),
+        &rules_category,
+        platform,
+        scope,
+        project_name,
+        items,
+    );
 }
 
-fn collect_project_agents(
-    agents_root: &Path,
-    project_name: &str,
-    platform: ItemPlatform,
+fn scoped_category(kind_label: &str, scope: &ItemScope) -> String {
+    match scope {
+        ItemScope::Global => format!("Global {kind_label}"),
+        ItemScope::Project => format!("Project {kind_label}"),
+    }
+}
+
+fn collect_context_file(
+    base_directory: &Path,
+    path: &Path,
+    collected_context_paths: &mut HashSet<String>,
     items: &mut Vec<CatalogItem>,
 ) {
-    if !agents_root.exists() {
+    let file_name = path.file_name().and_then(|value| value.to_str()).unwrap_or("");
+    if !CONTEXT_FILE_NAMES.iter().any(|name| *name == file_name) {
         return;
     }
 
-    let entries = match fs::read_dir(agents_root) {
-        Ok(entries) => entries,
-        Err(_) => return,
+    let Some(container) = path.parent() else {
+        return;
     };
 
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|value| value.to_str()) != Some("md") {
-            continue;
-        }
-        push_agent_item(
-            &path,
-            "Project Agents",
-            platform.clone(),
-            ItemScope::Project,
-            Some(project_name.to_string()),
-            items,
-        );
-    }
+    let (scope, project_name) = scope_for(base_directory, container);
+    let category = match scope {
+        ItemScope::Global => "Global Context",
+        ItemScope::Project => "Project Context",
+    };
+
+    push_context_item(
+        path,
+        category,
+        ItemPlatform::Claude,
+        scope,
+        project_name,
+        collected_context_paths,
+        items,
+    );
 }
 
 fn collect_skill_directory(
@@ -539,7 +328,128 @@ fn collect_skill_directory(
             continue;
         }
         push_skill_item(
-            &entry.path().to_path_buf(),
+            entry.path(),
+            category,
+            platform.clone(),
+            scope.clone(),
+            project_name.clone(),
+            items,
+        );
+    }
+}
+
+fn collect_plugin_skills(
+    cache_root: &Path,
+    platform: ItemPlatform,
+    scope: ItemScope,
+    project_name: Option<String>,
+    items: &mut Vec<CatalogItem>,
+) {
+    if !cache_root.exists() {
+        return;
+    }
+
+    for entry in WalkDir::new(cache_root)
+        .follow_links(false)
+        .into_iter()
+        .filter_map(Result::ok)
+    {
+        if entry.file_name() != "SKILL.md" {
+            continue;
+        }
+
+        let plugin_name = plugin_name_from_cache(cache_root, entry.path());
+        let category = format!("Plugin · {plugin_name}");
+        push_skill_item(
+            entry.path(),
+            &category,
+            platform.clone(),
+            scope.clone(),
+            project_name.clone(),
+            items,
+        );
+    }
+}
+
+/// Plugin layout: `<cache>/<hash>/<plugin>/skills/SKILL.md` → the plugin name is
+/// the second path segment relative to the cache root.
+fn plugin_name_from_cache(cache_root: &Path, skill_path: &Path) -> String {
+    let Ok(relative) = skill_path.strip_prefix(cache_root) else {
+        return "unknown".to_string();
+    };
+
+    let segments: Vec<String> = relative
+        .components()
+        .filter_map(|component| match component {
+            std::path::Component::Normal(value) => value.to_str().map(str::to_string),
+            _ => None,
+        })
+        .collect();
+
+    segments
+        .get(1)
+        .or_else(|| segments.first())
+        .cloned()
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
+fn collect_agents_directory(
+    agents_root: &Path,
+    category: &str,
+    platform: ItemPlatform,
+    scope: ItemScope,
+    project_name: Option<String>,
+    items: &mut Vec<CatalogItem>,
+) {
+    if !agents_root.exists() {
+        return;
+    }
+
+    let entries = match fs::read_dir(agents_root) {
+        Ok(entries) => entries,
+        Err(_) => return,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|value| value.to_str()) != Some("md") {
+            continue;
+        }
+        push_agent_item(
+            &path,
+            category,
+            platform.clone(),
+            scope.clone(),
+            project_name.clone(),
+            items,
+        );
+    }
+}
+
+fn collect_rules_directory(
+    rules_root: &Path,
+    category: &str,
+    platform: ItemPlatform,
+    scope: ItemScope,
+    project_name: Option<String>,
+    items: &mut Vec<CatalogItem>,
+) {
+    if !rules_root.exists() {
+        return;
+    }
+
+    let entries = match fs::read_dir(rules_root) {
+        Ok(entries) => entries,
+        Err(_) => return,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|value| value.to_str()) != Some("mdc") {
+            continue;
+        }
+        push_rule_item(
+            &path,
             category,
             platform.clone(),
             scope.clone(),
@@ -636,11 +546,6 @@ fn push_context_item(
     let canonical_path_label = canonical_path.display().to_string();
 
     if !collected_context_paths.insert(canonical_path_label.clone()) {
-        println!(
-            "[push_context_item] skipping duplicate context file {} (canonical: {})",
-            path.display(),
-            canonical_path_label
-        );
         return;
     }
 
@@ -653,12 +558,8 @@ fn push_context_item(
 
     let content = match fs::read_to_string(&canonical_path) {
         Ok(content) => content,
-        Err(error) => {
+        Err(_) => {
             collected_context_paths.remove(&canonical_path_label);
-            println!(
-                "[push_context_item] could not read {}: {error}",
-                canonical_path.display()
-            );
             return;
         }
     };
@@ -712,56 +613,8 @@ fn push_agent_item(
     });
 }
 
-fn path_component_strings(path: &Path) -> Vec<String> {
-    path.components()
-        .filter_map(|component| match component {
-            std::path::Component::Normal(value) => value.to_str().map(str::to_string),
-            _ => None,
-        })
-        .collect()
-}
-
-fn find_marker_end_index(components: &[String], marker_segments: &[&str]) -> Option<usize> {
-    if marker_segments.is_empty() || components.len() < marker_segments.len() {
-        return None;
-    }
-
-    components
-        .windows(marker_segments.len())
-        .position(|window| {
-            window
-                .iter()
-                .zip(marker_segments.iter())
-                .all(|(left, right)| left == *right)
-        })
-        .map(|start| start + marker_segments.len() - 1)
-}
-
-fn extract_plugin_name(skill_path: &Path, marker_segments: &[&str]) -> String {
-    let components = path_component_strings(skill_path);
-    let Some(cache_index) = find_marker_end_index(&components, marker_segments) else {
-        println!(
-            "[extract_plugin_name] could not find marker {:?} in {}",
-            marker_segments,
-            skill_path.display()
-        );
-        return "unknown".to_string();
-    };
-
-    // cache/{id}/{plugin_name}/skills/SKILL.md
-    if let Some(plugin_name) = components.get(cache_index + 2) {
-        return plugin_name.clone();
-    }
-
-    if let Some(fallback_name) = components.get(cache_index + 1) {
-        return fallback_name.clone();
-    }
-
-    println!(
-        "[extract_plugin_name] no plugin segment after cache in {}",
-        skill_path.display()
-    );
-    "unknown".to_string()
+fn canonical_context_path(path: &Path) -> PathBuf {
+    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
 }
 
 fn build_groups(items: Vec<CatalogItem>) -> Vec<CatalogGroup> {
@@ -1007,53 +860,54 @@ fn chrono_lite_now() -> String {
 mod tests {
     use super::*;
 
-    // Build a path with the running OS's native separator so component-based
-    // parsing is exercised identically on macOS, Linux, and Windows.
     fn path_from_segments(segments: &[&str]) -> PathBuf {
         segments.iter().copied().collect()
     }
 
     #[test]
-    fn extract_plugin_name_from_native_path() {
+    fn root_level_config_is_global() {
+        let base = path_from_segments(&["Users", "dev"]);
+        let cursor_dir = path_from_segments(&["Users", "dev", ".cursor"]);
+        let (scope, project) = scope_for(&base, cursor_dir.parent().unwrap());
+        assert_eq!(scope, ItemScope::Global);
+        assert_eq!(project, None);
+    }
+
+    #[test]
+    fn nested_config_is_project_named_after_its_folder() {
+        let base = path_from_segments(&["Users", "dev"]);
+        let cursor_dir = path_from_segments(&["Users", "dev", "work", "cognyx", ".cursor"]);
+        let (scope, project) = scope_for(&base, cursor_dir.parent().unwrap());
+        assert_eq!(scope, ItemScope::Project);
+        assert_eq!(project, Some("cognyx".to_string()));
+    }
+
+    #[test]
+    fn plugin_name_is_second_segment_after_cache() {
+        let cache_root = path_from_segments(&["Users", "dev", ".cursor", "plugins", "cache"]);
         let skill_path = path_from_segments(&[
-            "Users",
-            "dev",
-            ".cursor",
-            "plugins",
-            "cache",
-            "abc123",
-            "notion-workspace",
-            "skills",
+            "Users", "dev", ".cursor", "plugins", "cache", "abc123", "notion-workspace", "skills",
             "SKILL.md",
         ]);
-        let plugin_name = extract_plugin_name(&skill_path, CURSOR_PLUGIN_SEGMENTS);
-        assert_eq!(plugin_name, "notion-workspace");
+        assert_eq!(plugin_name_from_cache(&cache_root, &skill_path), "notion-workspace");
     }
 
     #[test]
-    fn extract_plugin_name_returns_unknown_when_marker_missing() {
-        let skill_path =
-            path_from_segments(&["Users", "dev", ".cursor", "skills", "my-skill", "SKILL.md"]);
-        let plugin_name = extract_plugin_name(&skill_path, CURSOR_PLUGIN_SEGMENTS);
-        assert_eq!(plugin_name, "unknown");
+    fn go_module_cache_is_noise_but_source_pkg_is_not() {
+        let go_cache = path_from_segments(&["Users", "dev", "go", "pkg"]);
+        assert!(is_noise_directory(&go_cache, "pkg"));
+
+        let source_pkg = path_from_segments(&["Users", "dev", "myapp", "pkg"]);
+        assert!(!is_noise_directory(&source_pkg, "pkg"));
+
+        let node_modules = path_from_segments(&["Users", "dev", "app", "node_modules"]);
+        assert!(is_noise_directory(&node_modules, "node_modules"));
     }
 
     #[test]
-    fn join_segments_builds_nested_path() {
-        let base = path_from_segments(&["Users", "dev"]);
-        let joined = join_segments(&base, &[".cursor", "plugins", "cache"]);
-        let expected = path_from_segments(&["Users", "dev", ".cursor", "plugins", "cache"]);
-        assert_eq!(joined, expected);
-    }
-
-    // Real backslash literal — only meaningful where `\` is a path separator.
-    #[test]
-    #[cfg(windows)]
-    fn extract_plugin_name_from_windows_backslash_path() {
-        let skill_path = Path::new(
-            r"C:\Users\dev\.cursor\plugins\cache\abc123\notion-workspace\skills\SKILL.md",
-        );
-        let plugin_name = extract_plugin_name(skill_path, CURSOR_PLUGIN_SEGMENTS);
-        assert_eq!(plugin_name, "notion-workspace");
+    fn platform_resolves_from_config_directory_name() {
+        assert_eq!(platform_for_config_directory(".claude"), Some(ItemPlatform::Claude));
+        assert_eq!(platform_for_config_directory(".agents"), Some(ItemPlatform::Shared));
+        assert_eq!(platform_for_config_directory("src"), None);
     }
 }

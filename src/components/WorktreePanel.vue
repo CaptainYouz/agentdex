@@ -58,6 +58,7 @@ import type { WorktreeNode as WorktreeNodeType } from '@/types/worktree.types'
 const props = defineProps<{
   selectedItem: CatalogItem | null
   reloadToken: number
+  scanRoot: string | null
 }>()
 
 const emit = defineEmits<{
@@ -67,6 +68,7 @@ const emit = defineEmits<{
 
 const selectedItemRef = toRef(props, 'selectedItem')
 const reloadTokenRef = toRef(props, 'reloadToken')
+const scanRootRef = toRef(props, 'scanRoot')
 
 const {
   childrenByFolderPath,
@@ -80,7 +82,7 @@ const {
   selectedFilePath,
   toggleFolder,
   worktreeRoot,
-} = useWorktree(selectedItemRef, reloadTokenRef)
+} = useWorktree(selectedItemRef, reloadTokenRef, scanRootRef)
 
 const activeRoot = computed(() => worktreeRoot.value ?? lastWorktreeRoot.value)
 

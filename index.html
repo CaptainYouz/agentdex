@@ -5,6 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Agentdex</title>
+    <style>
+      /* Paint the app background immediately so the window never flashes white
+         or shows a blank/beachball frame before the Vue app mounts. Once Vue
+         mounts it renders the app shell with a skeleton while the scan runs. */
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #111318;
+      }
+    </style>
   </head>
 
   <body>
