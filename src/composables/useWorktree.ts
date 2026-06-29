@@ -9,6 +9,7 @@ import type { DirectoryEntry, WorktreeNode } from '@/types/worktree.types'
 export function useWorktree(
   selectedItem: Ref<CatalogItem | null>,
   reloadToken: Ref<number>,
+  scanRoot: Ref<string | null>,
 ) {
   const homeDirectory = ref<string | null>(null)
   const worktreeRoot = ref<string | null>(null)
@@ -221,17 +222,21 @@ export function useWorktree(
       return
     }
 
-    const nextRoot = resolveWorktreeRoot(
-      currentSelectedItem,
-      homeDirectory.value,
-    )
-    const activeRoot = nextRoot ?? lastWorktreeRoot.value
+    // The worktree base follows the active scan root (a custom folder, or the
+    // home directory when none is chosen) so it stays in sync when the root changes.
+    const activeBase = scanRoot.value ?? homeDirectory.value
+    const nextRoot =
+      resolveWorktreeRoot(currentSelectedItem, activeBase)
+      ?? activeBase
+      ?? lastWorktreeRoot.value
 
-    if (!activeRoot) {
+    if (!nextRoot) {
       worktreeRoot.value = null
       selectedFilePath.value = null
       return
     }
+
+    const activeRoot = nextRoot
 
     if (activeRoot !== worktreeRoot.value) {
       await initializeWorktreeRoot(activeRoot)
@@ -245,6 +250,10 @@ export function useWorktree(
   watch(selectedItem, () => {
     void syncWorktreeWithSelection()
   }, { immediate: true })
+
+  watch(scanRoot, () => {
+    void syncWorktreeWithSelection()
+  })
 
   watch(reloadToken, (nextToken, previousToken) => {
     if (nextToken === previousToken || nextToken === 0) {

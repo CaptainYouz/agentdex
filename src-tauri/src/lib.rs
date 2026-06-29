@@ -10,9 +10,20 @@ use tauri_plugin_opener::OpenerExt;
 use types::{CatalogResponse, DirectoryEntry, ItemFileStats};
 
 #[tauri::command]
-fn scan_catalog() -> Result<CatalogResponse, String> {
-    let home_directory = home_directory()?;
-    Ok(scanner::build_catalog(&home_directory))
+async fn scan_catalog(root: Option<String>) -> Result<CatalogResponse, String> {
+    // Run the filesystem scan on a blocking thread so it never freezes the UI
+    // (sync commands run on the main thread, which would block the window).
+    // `root` overrides the scan base; when absent the user's home directory is used.
+    tauri::async_runtime::spawn_blocking(move || {
+        let base_directory = match root {
+            Some(path) => PathBuf::from(path),
+            None => home_directory()?,
+        };
+        println!("[scan_catalog] scanning base: {}", base_directory.display());
+        Ok(scanner::build_catalog(&base_directory))
+    })
+    .await
+    .map_err(|error| format!("Catalog scan task failed: {error}"))?
 }
 
 #[tauri::command]
@@ -149,6 +160,7 @@ fn home_directory() -> Result<PathBuf, String> {
 pub fn run() {
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init());
 
     #[cfg(desktop)]
